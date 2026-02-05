@@ -1,2 +1,778 @@
-# Totally-Science
-Totally Science is an all-in-one educational games web app featuring Memory Match, Science Quiz, Reaction Tester, Dinosaur Runner, and Ball Bounce. Built with pure HTML, CSS, and JavaScript, it runs in any browser and makes learning science fun and interactive.
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Totally Science — ALL-IN-ONE Games</title>
+<style>
+  :root{
+    --bg:#f6f9ff; --panel:#ffffff; --muted:#6b7280; --accent:#2563eb; --accent-2:#7c3aed;
+    --radius:12px; --shadow:0 8px 30px rgba(15,23,42,0.06);
+    --glass: rgba(255,255,255,0.6);
+  }
+  *{box-sizing:border-box;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial;}
+  body{margin:0;background:linear-gradient(180deg,#eef2ff 0%, #ffffff 100%);color:#0f172a;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1100px;margin:24px auto;padding:18px;display:grid;grid-template-columns:260px 1fr;gap:18px;align-items:start}
+  header.top{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .brand{display:flex;gap:12px;align-items:center}
+  .logo{width:54px;height:54px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:18px}
+  h1{font-size:20px;margin:0}
+  .subtitle{font-size:13px;color:var(--muted)}
+  .btn{padding:8px 12px;border-radius:10px;border:0;cursor:pointer;background:var(--accent);color:white}
+  .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(37,99,235,0.12)}
+  .one-click{background:linear-gradient(90deg,var(--accent),var(--accent-2));box-shadow:0 6px 18px rgba(37,99,235,0.18)}
+  aside.sidebar{background:var(--panel);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);height:fit-content}
+  .games-list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .game-btn{display:block;text-align:left;padding:10px;border-radius:8px;border:1px solid transparent;background:transparent;cursor:pointer}
+  .game-btn:hover{background:#fbfbff}
+  .game-btn.active{background:#eef2ff;border-color:#e0e7ff}
+  main.card{background:var(--panel);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+  .controls{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+  .game-area{min-height:360px}
+  footer.small{font-size:12px;color:var(--muted);margin-top:12px}
+
+  /* Memory styles */
+  #memory-board{display:grid;gap:10px;justify-content:center}
+  .cols-4{grid-template-columns:repeat(4,90px)}
+  .cols-6{grid-template-columns:repeat(6,70px)}
+  .card {
+    width:90px;height:90px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(180deg,#f8fafc,#ffffff);border:1px solid rgba(15,23,42,0.04);
+    box-shadow: 0 4px 10px rgba(2,6,23,0.04);font-size:34px;user-select:none;transition:transform 350ms cubic-bezier(.2,.9,.3,1), transform-origin 200ms;
+    transform-style:preserve-3d;position:relative;perspective:1000px;
+  }
+  .card-inner{position:relative;width:100%;height:100%;border-radius:10px;transition:transform .45s;transform-style:preserve-3d;}
+  .card.flipped .card-inner{transform:rotateY(180deg)}
+  .card-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;border-radius:10px}
+  .card-front{background:#111827;color:#fff;font-size:26px}
+  .card-back{background:linear-gradient(180deg,#fff,#f3f4f6);color:#111827;transform:rotateY(180deg);border:1px solid rgba(15,23,42,0.03)}
+  .small-txt{font-size:13px;color:var(--muted)}
+
+  /* quiz */
+  .answers{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+  .answer-btn{padding:10px;border-radius:8px;border:1px solid #eef2ff;background:#fff;cursor:pointer;text-align:left}
+  .answer-btn.correct{outline:3px solid rgba(34,197,94,0.12)}
+  .answer-btn.wrong{opacity:0.7}
+
+  /* reaction */
+  .reaction-box{width:240px;height:90px;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid #e6e9f8;font-weight:700}
+
+  /* dino */
+  canvas{display:block;margin:14px auto;border-radius:10px;background:#fff}
+
+  /* toast */
+  .toast{position:fixed;right:18px;bottom:18px;background:#111827;color:white;padding:10px 14px;border-radius:10px;box-shadow:0 10px 30px rgba(2,6,23,0.2);display:none}
+
+  @media(max-width:920px){
+    .wrap{grid-template-columns:1fr;padding:12px}
+    aside.sidebar{order:2}
+    main.card{order:1}
+    .card{width:70px;height:70px;font-size:26px}
+    .card-front{font-size:20px}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">TS</div>
+      <div>
+        <h1>Totally Science — Games</h1>
+        <div class="subtitle">Playful science — quizzes, puzzles & mini games</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn ghost" id="toggleSoundBtn" title="Toggle sound">🔈 Sound: Off</button>
+      <button class="btn one-click" id="oneClickBtn" title="Enable all advanced features">Create All — Enable Everything</button>
+      <button class="btn" id="publishBtn">Publish</button>
+    </div>
+  </header>
+
+  <aside class="sidebar" aria-label="Game list">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <strong>Games</strong>
+      <button class="btn ghost" id="addBtn">+ Add</button>
+    </div>
+
+    <div class="games-list" id="gamesList">
+      <!-- populated by JS -->
+    </div>
+
+    <div style="margin-top:12px;font-size:13px;color:var(--muted)">
+      Tip: press <strong>1</strong>-Memory <strong>2</strong>-Quiz <strong>3</strong>-Reaction <strong>4</strong>-Dino <strong>5</strong>-Ball
+    </div>
+  </aside>
+
+  <main class="card">
+    <div class="controls">
+      <div id="currentTitle" style="font-weight:700">Choose a game</div>
+      <div style="flex:1"></div>
+
+      <select id="memoryLevel" style="display:none;padding:8px;border-radius:8px;border:1px solid #eef2ff;">
+        <option value="easy">Memory: Easy (6 pairs)</option>
+        <option value="medium">Memory: Medium (8 pairs)</option>
+        <option value="hard">Memory: Hard (12 pairs)</option>
+      </select>
+
+      <button class="btn ghost" id="restartBtn" style="display:none">Restart</button>
+      <button class="btn ghost" id="backBtn" style="display:none">Back</button>
+    </div>
+
+    <section class="game-area" id="gameArea">
+      <p class="small-txt">Select a game from the left. This all-in-one bundle includes Memory Match (with 3 levels), Quiz (20 Qs), Reaction Tester, Dinosaur Runner and Ball Bounce. Click “Create All” to preload assets & enable extras.</p>
+    </section>
+
+    <footer class="small">Starter kit — extend with leaderboards, categories and accounts.</footer>
+  </main>
+</div>
+
+<!-- Loading overlay -->
+<div id="loader" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(255,255,255,0.9),rgba(245,247,255,0.6));backdrop-filter: blur(4px);z-index:40;display:none">
+  <div style="background:white;padding:20px;border-radius:10px;box-shadow:0 8px 30px rgba(2,6,23,0.08);text-align:center">
+    <div style="font-weight:700;margin-bottom:8px">Preparing Totally Science…</div>
+    <div style="font-size:13px;color:#64748b">Preloading icons, sounds and game data</div>
+    <div id="loaderProgress" style="margin-top:12px;height:8px;background:#eef2ff;border-radius:6px;overflow:hidden;width:300px">
+      <div id="loaderBar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--accent),var(--accent-2))"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* -------------------------
+   Globals & Utilities
+   ------------------------- */
+const games = [
+  { id:'memory', title:'Memory Match', shortcut:'1' },
+  { id:'quiz', title:'Science Quiz', shortcut:'2' },
+  { id:'reaction', title:'Reaction Tester', shortcut:'3' },
+  { id:'dino', title:'Dinosaur Runner', shortcut:'4' },
+  { id:'ball', title:'Ball Bounce', shortcut:'5' },
+];
+const gamesListEl = document.getElementById('gamesList');
+const gameArea = document.getElementById('gameArea');
+const currentTitle = document.getElementById('currentTitle');
+const restartBtn = document.getElementById('restartBtn');
+const backBtn = document.getElementById('backBtn');
+const memoryLevelSelect = document.getElementById('memoryLevel');
+
+let activeGame = null;
+let soundEnabled = false;
+let audioCtx = null;
+
+/* tiny Toast */
+function showToast(txt, t=2200){
+  const el = document.getElementById('toast');
+  el.textContent = txt;
+  el.style.display = 'block';
+  setTimeout(()=> el.style.display='none', t);
+}
+
+/* One-Click create: preloads and enables features */
+document.getElementById('oneClickBtn').addEventListener('click', async ()=>{
+  // show loader and progress
+  document.getElementById('loader').style.display = 'flex';
+  const total = 6;
+  for(let i=1;i<=total;i++){
+    await sleep(250);
+    document.getElementById('loaderBar').style.width = Math.round((i/total)*100)+'%';
+  }
+  document.getElementById('loader').style.display = 'none';
+  // enable audio and extras
+  enableSound(true);
+  showToast('All features enabled — enjoy!');
+});
+
+/* Sound toggle */
+document.getElementById('toggleSoundBtn').addEventListener('click', ()=>{
+  enableSound(!soundEnabled);
+});
+
+function enableSound(flag){
+  soundEnabled = !!flag;
+  document.getElementById('toggleSoundBtn').textContent = soundEnabled ? '🔊 Sound: On' : '🔈 Sound: Off';
+  if(soundEnabled){
+    // create audio context if needed
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // warm up by playing tiny click
+    playTone(880, 0.02, 0.001);
+  } else {
+    if(audioCtx && audioCtx.state !== 'closed'){
+      // don't close to avoid needing user gesture again; just mute logically
+    }
+  }
+}
+
+function playTone(freq, duration=0.12, delay=0){
+  if(!soundEnabled || !audioCtx) return;
+  try{
+    const now = audioCtx.currentTime + delay;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'sine';
+    o.frequency.value = freq;
+    g.gain.value = 0.001;
+    o.connect(g); g.connect(audioCtx.destination);
+    g.gain.setValueAtTime(0.001, now);
+    g.gain.exponentialRampToValueAtTime(0.12, now + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    o.start(now); o.stop(now + duration + 0.02);
+  }catch(e){}
+}
+
+/* helpers */
+function sleep(ms){ return new Promise(res=>setTimeout(res,ms)); }
+function el(tag,cls,html){ const d=document.createElement(tag); if(cls) d.className=cls; if(html!==undefined) d.innerHTML=html; return d; }
+
+/* Build sidebar */
+function buildSidebar(){
+  games.forEach(g=>{
+    const btn = el('button','game-btn');
+    btn.id = 'btn-'+g.id;
+    btn.innerHTML = `<div style="font-weight:600">${g.title}</div><div style="font-size:12px;color:var(--muted)">Play & learn</div>`;
+    btn.onclick = ()=>openGame(g.id);
+    gamesListEl.appendChild(btn);
+  });
+}
+buildSidebar();
+
+function setActiveButton(id){
+  games.forEach(g=>{
+    const elb = document.getElementById('btn-'+g.id);
+    if(elb) elb.classList.toggle('active', g.id===id);
+  });
+}
+
+function openGame(id){
+  activeGame = id;
+  setActiveButton(id);
+  currentTitle.textContent = games.find(x=>x.id===id).title;
+  restartBtn.style.display='inline-block';
+  backBtn.style.display='inline-block';
+  memoryLevelSelect.style.display = (id==='memory') ? 'inline-block' : 'none';
+  // route to game renderers
+  if(id==='memory') renderMemory(gameArea);
+  if(id==='quiz') renderQuiz(gameArea);
+  if(id==='reaction') renderReaction(gameArea);
+  if(id==='dino') renderDino(gameArea);
+  if(id==='ball') renderBall(gameArea);
+}
+
+backBtn.addEventListener('click', ()=>{
+  activeGame = null;
+  setActiveButton(null);
+  currentTitle.textContent = 'Choose a game';
+  gameArea.innerHTML = '<p class="small-txt">Select a game from the left. Click Create All to preload assets and enable extras.</p>';
+  restartBtn.style.display='none';
+  backBtn.style.display='none';
+  memoryLevelSelect.style.display='none';
+});
+
+restartBtn.addEventListener('click', ()=>{
+  if(activeGame) openGame(activeGame);
+});
+
+/* keyboard shortcuts */
+document.addEventListener('keydown', (e)=>{
+  if(e.key==='1') openGame('memory');
+  if(e.key==='2') openGame('quiz');
+  if(e.key==='3') openGame('reaction');
+  if(e.key==='4') openGame('dino');
+  if(e.key==='5') openGame('ball');
+});
+
+/* -------------------------
+   MEMORY MATCH (levels, leaderboard)
+   ------------------------- */
+
+/* inline icons set (SVG strings) — used as front faces */
+const ICONS = [
+`<svg width="44" height="44" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2v20" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="8" r="3" fill="#fff"/></svg>`, // atom-ish
+`<svg width="44" height="44" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L15 8l6 1-4.5 4L18 22 12 18 6 22l1.5-8L3 9l6-1 3-6z" fill="#fff"/></svg>`, // rocket-ish
+`<svg width="44" height="44" viewBox="0 0 24 24" fill="none"><rect x="4" y="3" width="16" height="10" rx="2" fill="#fff"/><path d="M8 13v6h8v-6" stroke="#fff" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`, // microscope-like
+`<svg width="44" height="44" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" fill="#fff"/><path d="M6 20c3-4 9-4 12 0" stroke="#fff" stroke-width="1.4" stroke-linecap="round"/></svg>`, // dna-ish
+`<svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="M6 3h12v6H6z" fill="#fff"/><path d="M9 10v8" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/><path d="M15 10v8" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>`, // test tube-like
+`<svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="M3 12h18" stroke="#fff" stroke-width="1.6"/><path d="M12 3v18" stroke="#fff" stroke-width="1.6"/></svg>` // plus-grid
+];
+
+function generateMemorySymbols(countPairs){
+  // choose icons first then fallback to emojis if not enough
+  const arr = [];
+  for(let i=0;i<countPairs;i++){
+    if(i<ICONS.length) arr.push(ICONS[i]);
+    else arr.push(['⚛️','🧪','🧬','🔬','🚀','🌡️'][i%6]); // emoji fallback
+  }
+  return arr;
+}
+
+/* Leaderboard helper */
+function saveLeaderboard(gameId, name, scoreObj){
+  const key = 'ts_leaderboard_'+gameId;
+  const cur = JSON.parse(localStorage.getItem(key) || '[]');
+  cur.push({name,score:scoreObj.score,time:scoreObj.time,when:Date.now()});
+  // sort by best (lower time then higher score) — for memory we prefer fewer moves & faster time
+  cur.sort((a,b)=> {
+    if(a.score!==b.score) return b.score - a.score;
+    return a.time - b.time;
+  });
+  localStorage.setItem(key, JSON.stringify(cur.slice(0,10)));
+}
+
+/* Render Memory */
+function renderMemory(container){
+  container.innerHTML = '';
+  const title = el('div','','<div style="font-weight:700">Memory Match</div>');
+  const desc = el('div','small-txt','Find all matching science pairs. Save your score to a leaderboard when you win.');
+  container.appendChild(title); container.appendChild(desc);
+
+  const controls = el('div','', '');
+  controls.style.marginTop='10px';
+  const levelSel = memoryLevelSelect;
+  levelSel.value = levelSel.value || 'easy';
+  controls.appendChild(levelSel);
+  const restart = el('button','btn ghost','Restart');
+  restart.style.marginLeft='8px';
+  controls.appendChild(restart);
+  container.appendChild(controls);
+
+  const boardWrap = el('div','','');
+  boardWrap.style.marginTop='14px';
+  const board = el('div','');
+  board.id='memory-board';
+  boardWrap.appendChild(board);
+  container.appendChild(boardWrap);
+
+  const status = el('div','small-txt','Matches: 0');
+  status.style.marginTop='12px';
+  container.appendChild(status);
+
+  const leaderBtn = el('button','btn ghost','View Leaderboard');
+  leaderBtn.style.marginTop='10px'; leaderBtn.style.marginLeft='6px';
+  container.appendChild(leaderBtn);
+
+  let pairs = 6; // default
+  function setPairsFromLevel(){
+    const v = levelSel.value;
+    if(v==='easy') pairs = 6;
+    if(v==='medium') pairs = 8;
+    if(v==='hard') pairs = 12;
+  }
+  setPairsFromLevel();
+  levelSel.onchange = ()=>{ setPairsFromLevel(); init(); };
+
+  restart.onclick = ()=> init();
+  leaderBtn.onclick = ()=> showLeaderboard('memory');
+
+  // state
+  let symbols = [];
+  let deck = [];
+  let open = []; // indices
+  let matched = new Array(0);
+  let moves = 0;
+  let startTime = 0;
+
+  function init(){
+    board.innerHTML = '';
+    open=[];
+    matched=[];
+    moves=0;
+    startTime = performance.now();
+    setPairsFromLevel();
+    symbols = generateMemorySymbols(pairs);
+    // duplicate and shuffle
+    deck = [...symbols, ...symbols].map((s,i)=>({id:i,face:s}));
+    deck.sort(()=>Math.random()-0.5);
+    // grid columns responsive
+    if(pairs<=6) board.className = 'cols-4';
+    else if(pairs<=8) board.className = 'cols-4';
+    else board.className = 'cols-6';
+    // build cards
+    deck.forEach((c, idx)=>{
+      const card = el('div','card');
+      card.dataset.index = idx;
+      const inner = el('div','card-inner');
+      const front = el('div','card-face card-front');
+      const back = el('div','card-face card-back');
+      // front: hidden face (icon)
+      // we'll display the symbol in front as HTML (SVG or emoji)
+      front.innerHTML = (typeof c.face === 'string' && c.face.startsWith('<svg')) ? c.face : `<span style="font-size:28px">${c.face}</span>`;
+      back.innerHTML = '<div style="font-weight:700;color:#111827">?</div>';
+      inner.appendChild(back);
+      inner.appendChild(front);
+      card.appendChild(inner);
+      board.appendChild(card);
+      // click
+      card.onclick = ()=> flipCard(card, c);
+    });
+    status.textContent = 'Matches: 0';
+    if(soundEnabled) playTone(600,0.05);
+  }
+
+  function flipCard(cardEl, cardObj){
+    if(open.length===2) return;
+    if(cardEl.classList.contains('matched') || cardEl.classList.contains('flipped')) return;
+    cardEl.classList.add('flipped');
+    // small flip sound
+    if(soundEnabled) playTone(1200,0.04);
+    open.push({el:cardEl,obj:cardObj});
+    if(open.length===2){
+      moves++;
+      // compare faces: compare HTML if svg else compare string
+      const a = open[0].obj.face;
+      const b = open[1].obj.face;
+      const isMatch = (a===b);
+      if(isMatch){
+        // match
+        open[0].el.classList.add('matched');
+        open[1].el.classList.add('matched');
+        matched.push(a);
+        open = [];
+        status.textContent = `Matches: ${matched.length}/${pairs}`;
+        if(soundEnabled) playTone(200,0.08,0.02);
+        if(matched.length === pairs){
+          // win
+          const timeTaken = Math.round((performance.now()-startTime)/1000);
+          setTimeout(()=> {
+            showWin(moves, timeTaken);
+          }, 400);
+        }
+      } else {
+        // not match -> flip back after short delay
+        if(soundEnabled) playTone(220,0.06,0.02);
+        setTimeout(()=>{
+          open.forEach(o=> o.el.classList.remove('flipped'));
+          open = [];
+        }, 700);
+      }
+    }
+  }
+
+  function showWin(movesCount, timeTaken){
+    // prompt for name and save to leaderboard
+    const name = prompt(`You won! Moves: ${movesCount}, Time: ${timeTaken}s\nEnter your name to save to leaderboard:`, 'Player');
+    if(name){
+      saveLeaderboard('memory', name, {score:(pairs*100 - movesCount), time:timeTaken});
+      showToast('Saved to leaderboard!');
+    } else {
+      showToast('Win not saved (no name).');
+    }
+  }
+
+  init();
+}
+
+/* Show leaderboard modal (simple) */
+function showLeaderboard(gameId){
+  const key = 'ts_leaderboard_'+gameId;
+  const list = JSON.parse(localStorage.getItem(key) || '[]');
+  let s = `<div style="padding:10px;min-width:260px"><div style="font-weight:700;margin-bottom:6px">Leaderboard</div>`;
+  if(list.length===0) s += '<div style="color:var(--muted)">No scores yet</div>';
+  else {
+    s += '<ol style="padding-left:18px;margin:6px 0">';
+    list.forEach(it => s += `<li style="margin-bottom:6px"><strong>${escapeHtml(it.name)}</strong> — score:${it.score} time:${it.time}s</li>`);
+    s += '</ol>';
+  }
+  s += `<div style="margin-top:8px;text-align:right"><button id="closeLb" style="padding:8px;border-radius:8px">Close</button></div></div>`;
+  const wrapper = el('div'); wrapper.innerHTML = s;
+  const popup = el('div'); popup.style.position='fixed'; popup.style.left='50%'; popup.style.top='50%'; popup.style.transform='translate(-50%,-50%)';
+  popup.style.background='white'; popup.style.padding='10px'; popup.style.borderRadius='10px'; popup.style.boxShadow='0 12px 28px rgba(2,6,23,0.18)'; popup.appendChild(wrapper);
+  document.body.appendChild(popup);
+  document.getElementById('closeLb').onclick = ()=> document.body.removeChild(popup);
+}
+
+/* -------------------------
+   QUIZ (20 Qs, mixed)
+   ------------------------- */
+const quizData = [
+  {q:"The Earth revolves around the Sun.", type:'tf', a:true},
+  {q:"Humans have three lungs.", type:'tf', a:false},
+  {q:"Water boils at 100°C at sea level.", type:'tf', a:true},
+  {q:"The Sun is a planet.", type:'tf', a:false},
+  {q:"Plants produce oxygen during photosynthesis.", type:'tf', a:true},
+  {q:"An atom is the smallest unit of an element.", type:'tf', a:true},
+  {q:"Sound travels faster than light.", type:'tf', a:false},
+  {q:"DNA carries genetic information.", type:'tf', a:true},
+  {q:"There are 8 planets in the Solar System.", type:'tf', a:true},
+  {q:"Lightning never strikes the same place twice.", type:'tf', a:false},
+
+  {q:"Which gas is essential for respiration in humans?", type:'mc', a:['Carbon Dioxide','Oxygen','Nitrogen','Helium'], correct:1},
+  {q:"What is the chemical symbol for water?", type:'mc', a:['H2O','WO','HO2','O2H'], correct:0},
+  {q:"Which planet is known as the Red Planet?", type:'mc', a:['Venus','Earth','Mars','Jupiter'], correct:2},
+  {q:"What do plants take in to perform photosynthesis?", type:'mc', a:['Oxygen','Carbon Dioxide','Nitrogen','Methane'], correct:1},
+  {q:"pH value below 7 indicates?", type:'mc', a:['Neutral','Basic','Acidic','Alkaline'], correct:2},
+  {q:"Which organ pumps blood through the body?", type:'mc', a:['Lungs','Heart','Liver','Kidney'], correct:1},
+  {q:"Light-year measures what?", type:'mc', a:['Time','Energy','Distance','Speed'], correct:2},
+  {q:"Which particle has a negative charge?", type:'mc', a:['Proton','Neutron','Electron','Photon'], correct:2},
+  {q:"Which is not a state of matter?", type:'mc', a:['Solid','Liquid','Gas','Energy'], correct:3},
+  {q:"Antibiotics are effective against?", type:'mc', a:['Viruses','Bacteria','Fungi','All'], correct:1}
+];
+
+function renderQuiz(container){
+  container.innerHTML = '';
+  let idx = 0, score = 0;
+  const box = el('div','');
+  box.innerHTML = '<div style="font-weight:700">Science Quiz</div><div class="small-txt">20 mixed questions — multiple choice and true/false.</div>';
+  const qTxt = el('div'); qTxt.style.marginTop='12px';
+  box.appendChild(qTxt);
+  const answers = el('div','answers'); box.appendChild(answers);
+  const footer = el('div',''); footer.style.marginTop='10px';
+  const scoreEl = el('div','small-txt','Score: 0');
+  footer.appendChild(scoreEl);
+  const restart = el('button','btn ghost','Restart');
+  restart.style.marginLeft='8px';
+  footer.appendChild(restart);
+  box.appendChild(footer);
+  container.appendChild(box);
+
+  restart.onclick = ()=> { idx=0; score=0; scoreEl.textContent='Score: 0'; renderQuestion(); }
+
+  function renderQuestion(){
+    answers.innerHTML=''; qTxt.innerHTML='';
+    if(idx >= quizData.length){
+      qTxt.innerHTML = `<div style="font-weight:700">Quiz Complete</div><div class="small-txt">Score ${score}/${quizData.length}</div>`;
+      // option to save score
+      const saveBtn = el('button','btn','Save Score');
+      saveBtn.onclick = async ()=>{
+        const name = prompt('Enter name to save quiz score','Player');
+        if(name){
+          saveLeaderboard('quiz', name, {score, time:0});
+          showToast('Quiz saved to leaderboard');
+        }
+      };
+      answers.appendChild(saveBtn);
+      return;
+    }
+    const cur = quizData[idx];
+    qTxt.innerHTML = `<div style="font-weight:600">${idx+1}. ${cur.q}</div>`;
+    if(cur.type==='tf'){
+      // True / False buttons
+      const tbtn = el('button','answer-btn','True');
+      const fbtn = el('button','answer-btn','False');
+      tbtn.onclick = ()=> answerTf(true, tbtn);
+      fbtn.onclick = ()=> answerTf(false, fbtn);
+      answers.appendChild(tbtn); answers.appendChild(fbtn);
+    } else {
+      cur.a.forEach((opt,i)=>{
+        const b = el('button','answer-btn',escapeHtml(opt));
+        b.onclick = ()=> answerMc(i, b, cur.correct);
+        answers.appendChild(b);
+      });
+    }
+  }
+
+  function answerTf(val, elbtn){
+    const cur = quizData[idx];
+    const correct = (val === cur.a);
+    if(correct){ score++; elbtn.classList.add('correct'); if(soundEnabled) playTone(880,0.06); }
+    else { elbtn.classList.add('wrong'); if(soundEnabled) playTone(200,0.08); }
+    scoreEl.textContent = 'Score: '+score;
+    idx++;
+    setTimeout(renderQuestion,700);
+  }
+
+  function answerMc(choice, elbtn, correctIdx){
+    const all = Array.from(answers.children);
+    all.forEach(a=>a.disabled=true);
+    if(choice===correctIdx){
+      elbtn.classList.add('correct'); score++; if(soundEnabled) playTone(880,0.06);
+    } else { elbtn.classList.add('wrong'); if(soundEnabled) playTone(200,0.08); all[correctIdx].classList.add('correct'); }
+    scoreEl.textContent='Score: '+score;
+    idx++;
+    setTimeout(renderQuestion,900);
+  }
+
+  renderQuestion();
+}
+
+/* -------------------------
+   REACTION TESTER
+   ------------------------- */
+function renderReaction(container){
+  container.innerHTML='';
+  const title = el('div','','<div style="font-weight:700">Reaction Time Tester</div>');
+  const desc = el('div','small-txt','Click when the box turns green.'); desc.style.marginTop='6px';
+  container.appendChild(title); container.appendChild(desc);
+
+  const box = el('div','reaction-box','Wait...');
+  box.style.marginTop='12px';
+  box.style.background='#fef2f2'; box.style.border='1px solid #fca5a5';
+  container.appendChild(box);
+  const res = el('div','small-txt','Last: —'); res.style.marginTop='8px'; container.appendChild(res);
+
+  let waiting=true, targetOn=false, start=0, timer=0;
+  function startTest(){
+    clearTimeout(timer);
+    waiting=true; targetOn=false; start=0;
+    box.textContent='Wait...'; box.style.background='#fff7ed'; box.style.border='1px solid #fbd38d';
+    timer = setTimeout(()=> {
+      targetOn=true; start = performance.now();
+      box.textContent='CLICK!'; box.style.background='#ecfdf5'; box.style.border='1px solid #bbf7d0';
+    }, 1000 + Math.random()*2200);
+  }
+  box.onclick = ()=>{
+    if(targetOn){
+      const ms = Math.round(performance.now() - start);
+      res.textContent = 'Last: '+ms+' ms';
+      if(soundEnabled) playTone(600,0.08);
+      setTimeout(startTest, 800);
+    } else {
+      res.textContent = 'Too soon!';
+      if(soundEnabled) playTone(200,0.06);
+      clearTimeout(timer);
+      setTimeout(startTest,700);
+    }
+  };
+  startTest();
+}
+
+/* -------------------------
+   DINO RUNNER (simple)
+   ------------------------- */
+function renderDino(container){
+  container.innerHTML='';
+  const title = el('div','','<div style="font-weight:700">Dinosaur Runner</div>');
+  const desc = el('div','small-txt','Press space or tap to jump. Avoid obstacles.');
+  container.appendChild(title); container.appendChild(desc);
+  // canvas
+  const canvas = el('canvas'); canvas.width=600; canvas.height=160; canvas.style.marginTop='12px';
+  container.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  // game state
+  let dinoY=120, vy=0, gravity=0.9, ground=130;
+  let obstacles=[], speed=3, score=0, running=true;
+  function reset(){
+    obstacles=[]; dinoY=120; vy=0; speed=3; score=0; running=true;
+  }
+  function spawn(){
+    obstacles.push({x:canvas.width, w:18, h:28});
+  }
+  let lastSpawn=0;
+  function loop(ts){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // ground
+    ctx.fillStyle='#e6e6e6'; ctx.fillRect(0,ground,canvas.width,4);
+    // draw dino
+    ctx.fillStyle='#111827'; ctx.fillRect(50, dinoY, 24, 24);
+    // obstacles
+    for(let i=obstacles.length-1;i>=0;i--){
+      obstacles[i].x -= speed;
+      ctx.fillStyle='#ff4d4f';
+      ctx.fillRect(obstacles[i].x, ground - obstacles[i].h, obstacles[i].w, obstacles[i].h);
+      // collision
+      if(obstacles[i].x < 80 && obstacles[i].x + obstacles[i].w > 50){
+        if(dinoY + 24 > ground - obstacles[i].h){
+          running=false;
+        }
+      }
+      if(obstacles[i].x < -50) obstacles.splice(i,1);
+    }
+    // physics
+    vy += gravity;
+    dinoY += vy;
+    if(dinoY > ground - 24) { dinoY = ground - 24; vy = 0; }
+    // spawn logic
+    lastSpawn++;
+    if(lastSpawn > 80 - Math.min(40, score/5)) { spawn(); lastSpawn=0; score++; speed += 0.005; }
+    // score
+    ctx.fillStyle='#0f172a'; ctx.fillText('Score: '+score, canvas.width - 120, 20);
+    if(running) requestAnimationFrame(loop);
+    else {
+      ctx.fillStyle='rgba(0,0,0,0.5)';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle='white'; ctx.font='18px sans-serif';
+      ctx.fillText('Game Over — Score: '+score, canvas.width/2 - 80, canvas.height/2);
+      // option to save
+      setTimeout(()=> {
+        const name = prompt('Game Over — Enter name to save score','Player');
+        if(name){ saveLeaderboard('dino', name, {score, time:0}); showToast('Saved!'); }
+      },100);
+    }
+  }
+
+  // controls
+  function jump(){
+    if(dinoY >= ground - 24 - 2){ vy = -12; if(soundEnabled) playTone(1000,0.05); }
+  }
+
+  document.addEventListener('keydown', function kd(e){
+    if(e.code==='Space') jump();
+  });
+  canvas.addEventListener('click', jump);
+  reset(); requestAnimationFrame(loop);
+}
+
+/* -------------------------
+   BALL BOUNCE
+   ------------------------- */
+function renderBall(container){
+  container.innerHTML='';
+  const title = el('div','','<div style="font-weight:700">Ball Bounce</div>');
+  const desc = el('div','small-txt','Click canvas to add bounce impulse.');
+  container.appendChild(title); container.appendChild(desc);
+  const canvas = el('canvas'); canvas.width=560; canvas.height=320; canvas.style.marginTop='12px';
+  container.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  let balls = [];
+  function addBall(x,y){
+    balls.push({x,y,vx:(Math.random()*4-2),vy:(Math.random()*2-1),r:14});
+  }
+  canvas.onclick = (e)=>{
+    const rect = canvas.getBoundingClientRect();
+    addBall(e.clientX-rect.left, e.clientY-rect.top);
+    if(soundEnabled) playTone(700,0.06);
+  };
+  function loop(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(let b of balls){
+      b.vy += 0.3; b.x += b.vx; b.y += b.vy;
+      if(b.x < b.r){ b.x=b.r; b.vx = -b.vx*0.8; }
+      if(b.x > canvas.width - b.r){ b.x = canvas.width - b.r; b.vx = -b.vx*0.8; }
+      if(b.y > canvas.height - b.r){ b.y = canvas.height - b.r; b.vy = -b.vy*0.7; }
+      ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fillStyle='#111827'; ctx.fill();
+    }
+    requestAnimationFrame(loop);
+  }
+  addBall(100,50);
+  loop();
+}
+
+/* small HTML escape */
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* simple hideAll function used by some flows */
+function hideAll(){
+  gameArea.innerHTML = '<p class="small-txt">Loading game…</p>';
+}
+
+/* Publish button */
+document.getElementById('publishBtn').addEventListener('click', ()=> {
+  alert('Publishing guide:\n1) Save this HTML file.\n2) Upload to GitHub Pages, Netlify, or Vercel.\nIf you want, I can generate a ready-to-deploy repo.');
+});
+
+/* Add placeholder */
+document.getElementById('addBtn').addEventListener('click', ()=>{
+  alert('To add new games: edit the HTML and add a new game object in the `games` array and implement a renderer function.');
+});
+
+/* initial landing */
+gameArea.innerHTML = '<p class="small-txt">Select a game from the left. Click "Create All" to preload and enable sound/leaderboards.</p>';
+showToast('Tip: Press 1-5 to open games quickly',2500);
+
+/* Utility: preload some tiny assets (none external) */
+async function preloadAssets(){
+  // fake preload to simulate one-click behavior - already done by One-Click
+  await sleep(400);
+}
+
+// done
+</script>
+</body>
+</html>
+
